@@ -1,0 +1,75 @@
+---
+title: "Staygreen Trait Efficacy"
+author: "Nilesh Dighe"
+date: "April 20, 2015"
+output: html_document
+---
+###Year of data collection: 2012
+###Moisture stress levels:  Mod-High
+###Locations: Three
+  + *Hale Center, TX*
+  + *Levelland, TX*
+  + *Lamesa, TX*
+```{r, include=FALSE}
+library(caret)
+library(ggplot2)
+library(agricolae)
+library(dplyr)
+library(Hmisc)
+library(gridExtra)
+```
+
+```{r,echo=FALSE}
+efficacy2012<- read.csv("2012_STGvalid.csv", head=T)
+efficacy2012$Rep<- as.factor(efficacy2012$Rep)
+```
+*create subset by only including the experimental lines from bi-parental crosses*
+```{r}
+High<- filter(efficacy2012, StaygreenGroup=="High-STG")
+Mod<- filter(efficacy2012, StaygreenGroup=="Mod-STG")
+Non<- filter(efficacy2012, StaygreenGroup=="Non-STG")
+df<- data.frame()
+pops<- rbind(df, High, Mod, Non)
+#str(pops)
+#head(pops)
+#tail(pops)
+```
+
+*Cut Staygreen phenotype using the average Staygreen phenotype across all reps. Cut is made by dividing AvgSTG into three quantile groups*
+```{r}
+cutAvgSTG<- cut2(pops$AvgSTG,g=3)
+table(cutAvgSTG)
+```
+
+*Staygreen groups compared for YLDBE using box plots*
+```{r}
+p1<- qplot(cutAvgSTG, YLDBE, data=pops, fill=StaygreenGroup, geom=c("boxplot"),na.rm=TRUE)
+p2<- qplot(cutAvgSTG, YLDBE, data=pops, fill=StaygreenGroup, geom=c("boxplot","jitter"),na.rm=TRUE)
+grid.arrange(p1,p2,ncol=2)
+```
+*Staygreen groups compared for YLDBE using density plot*
+```{r, warning=FALSE}
+qplot(YLDBE, colour=StaygreenGroup,data=pops,geom="density")
+```
+*Scatterplots comparing Staygreen phenotype to YLDBE*
+```{r, warning=FALSE}
+#scatterplot without fitted line but colored by decision
+scatter3<- qplot(STG,YLDBE, data=pops, color=StaygreenGroup)
+scatter3 + geom_point() + facet_wrap(~ Origin, as.table=FALSE) + scale_color_manual(values = c("Mod-STG"="orange","Non-STG"="red", "High-STG"="dark green"))
+#scatterplot with fitted line but no color
+scatter2<- qplot(STG,YLDBE, data=pops)
+scatter2 + geom_point() +  geom_smooth(method=lm) + facet_wrap(~ Origin, as.table=FALSE)
+#scatterplot with fitted line BUT no facet wraps
+scatter5<- qplot(STG,YLDBE, data=pops)
+scatter5 + geom_point() +  geom_smooth(method=lm)
+```
+*Yield distributions for the three Staygreen groups by and across Origins*
+```{r,warning=FALSE,message=FALSE}
+#trait distribution and bar plotting using facet_wrap
+g<-  qplot(YLDBE, data=pops, fill=StaygreenGroup)
+g + geom_bar() + facet_wrap(~ Origin, as.table=FALSE) + scale_fill_manual(values = c("Mod-STG"="orange","Non-STG"="red", "High-STG"="dark green"))
+#trait distribution and bar plotting without facet_wrap
+g<-  qplot(YLDBE, data=pops, fill=StaygreenGroup)
+g + geom_bar() + scale_fill_manual(values = c("Mod-STG"="orange","Non-STG"="red", "High-STG"="dark green"))
+```
+
